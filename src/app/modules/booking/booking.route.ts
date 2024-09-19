@@ -15,5 +15,6 @@ router.post(
 );
 router.get('/my-bookings', verifyUser(), BookingController.FindUserBookings);
 router.get('/my-upcoming-booking',verifyUser(), BookingController.FindUserUpcomingBooking);
+router.put('/cancel-my-order',verifyUser(), BookingController.CancelUserBookingIn);
 
 export const BookingRoute = router;

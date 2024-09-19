@@ -17,7 +17,7 @@ type TCarReturn = {
   endTime: string;
 };
 
-// admin route
+// *********start admin route********
 const getAllBookingCarFromDB = async (carId: string, date: string) => {
   const query: { car?: Types.ObjectId; date?: string } = {};
 
@@ -98,7 +98,9 @@ const returnBookingCarFromDB = async (payload: TCarReturn) => {
   }
 };
 
-// user route
+// ********end admin route*******
+
+// ********start user route*********
 const bookingACarIntoDB = async (
   userId: string,
   payload: Partial<TCarOrder>,
@@ -147,7 +149,7 @@ const bookingACarIntoDB = async (
     session.endSession();
   }
 };
-
+// find User Bookings Car FromDB
 const findUserBookingsCarFromDB = async (userId: string) => {
   const query: { user?: Types.ObjectId } = {};
   if (userId) query.user = new Types.ObjectId(userId);
@@ -166,7 +168,6 @@ const findUserBookingsCarFromDB = async (userId: string) => {
   }
 };
 
-
 // UserUpcoming Booking
 const findUserUpcomingBooking = async (userId: string) =>{
 
@@ -177,7 +178,6 @@ const findUserUpcomingBooking = async (userId: string) =>{
     }
   
     try {
-      // Use Mongoose `find` to get the matching bookings
       const bookings = await BookingModel.find(query).populate('car');
   
       return bookings;
@@ -187,6 +187,38 @@ const findUserUpcomingBooking = async (userId: string) =>{
     }
 }  
 
+  // if user status pending user canceled booking 
+const cancelUserBookingInDB =async (userId:string, orderId:string, carId:string) =>{
+  try{
+  const query = {
+      user:new Types.ObjectId(userId),
+      _id:new Types.ObjectId(orderId),
+      car:new Types.ObjectId(carId),
+      status: 'pending'
+  }
+
+  const booking = await BookingModel.findOne(query)
+
+  if(!booking){
+    throw new AppError(httpStatus.NOT_FOUND, 'Booking not found or not in pending status');
+  }
+
+  // update booking
+  booking.status = 'canceled';
+  // await booking.save()
+  const result = await booking.save();
+
+  return result
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+}catch(err:any){
+  throw new AppError(httpStatus.CONFLICT, err.message || 'Error canceling the booking');
+  
+}
+
+}
+
+// **************end user route***********
 
 
 export const booking = {
@@ -195,5 +227,6 @@ export const booking = {
   findUserBookingsCarFromDB,
   returnBookingCarFromDB,
   findUserUpcomingBooking,
-
+  cancelUserBookingInDB
+  
 };

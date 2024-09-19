@@ -153,11 +153,44 @@ const FindUserUpcomingBooking: RequestHandler = catchAsync(async (req, res, next
     data: result,
   });
 });
+// cancel User BookingInDB
+const CancelUserBookingIn: RequestHandler = catchAsync(async (req, res, next) => {
+  const token = req?.headers.authorization?.split(' ')[1];
+  const {carId, orderId} = req.body 
+  if (!token) {
+    return next(new AppError(httpStatus.UNAUTHORIZED, 'No token provided'));
+  }
+
+  const decoded = jwt.verify(
+    token,
+    config.accessToken as string,
+  ) as JwtPayload & { data: { _id: string } };
+
+  const result = await booking.cancelUserBookingInDB(decoded.data._id, orderId, carId);
+
+  if (!result) {
+    sendResponse(res, {
+      statusCode: httpStatus.NOT_FOUND,
+      success: false,
+      message: 'your booking Cars not found',
+      data: [],
+    });
+    return;
+  }
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Your Order Canceled successfully',
+    success: true,
+    data: result,
+  });
+});
 
 export const BookingController = {
   BookingACar,
   GetAllBookingCar,
   FindUserBookings,
   ReturnBookingCar,
-  FindUserUpcomingBooking
+  FindUserUpcomingBooking,
+  CancelUserBookingIn
 };

@@ -41,7 +41,46 @@ const getSingleUser: RequestHandler = catchAsync(async (req, res, next) => {
   }
 });
 
+const ChangeUserRole: RequestHandler = catchAsync(async (req, res, next) => {
+  const {userId, role} = req.body
+  const data = await UserServices.changeUserRoleDB(userId, role)
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: 'User role update successfully',
+      data: data,
+    });
+});
+
+const BlockedUser: RequestHandler = catchAsync(async (req, res, next) => {
+  const {userId} = req.body
+  const data = await UserServices.blockedUserDB(userId);
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: 'User blocked successfully',
+      data: data,
+    });
+});
+
+const UnBlockedUser: RequestHandler = catchAsync(async (req, res, next) => {
+  const {userId} = req.body
+  const data = await UserServices.unBlockedUserDB(userId);
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: 'User unblocked successfully',
+      data: data,
+    });
+});
+
 export const UserController = {
   createStudent,
   getSingleUser,
+  ChangeUserRole,
+  BlockedUser,
+  UnBlockedUser
 };

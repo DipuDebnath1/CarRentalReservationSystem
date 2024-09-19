@@ -16,7 +16,11 @@ const createCar: RequestHandler = catchAsync(async (req, res, next) => {
 });
 
 const getAllCar: RequestHandler = catchAsync(async (req, res, next) => {
-  const result = await carService.getAllCarIntoDB();
+  
+  const {status } = req.query 
+  
+  const result = await carService.getAllCarIntoDB(status) ;
+
   if (!result) {
     sendResponse(res, {
       statusCode: httpStatus.NOT_FOUND,

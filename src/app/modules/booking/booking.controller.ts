@@ -8,6 +8,10 @@ import config from '../../../config';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import AppError from '../../ErrorHandler/AppError';
 
+
+//******admin**** */
+
+
 // Get All Booking Car
 const GetAllBookingCar: RequestHandler = catchAsync(async (req, res, next) => {
   const { carId, date } = req.query;
@@ -31,6 +35,79 @@ const GetAllBookingCar: RequestHandler = catchAsync(async (req, res, next) => {
     data: result,
   });
 });
+
+//Return Booking Car
+const ReturnBookingCar: RequestHandler = catchAsync(async (req, res, next) => {
+  const result = await booking.returnBookingCarFromDB(req.body);
+
+  if (!result) {
+    sendResponse(res, {
+      statusCode: httpStatus.NOT_FOUND,
+      success: false,
+      message: 'your booking Cars not found',
+      data: [],
+    });
+    return;
+  }
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Car returned successfully',
+    data: result,
+  });
+});
+
+//Approve Customer Booking DB
+const ApproveCustomerBooking: RequestHandler = catchAsync(async (req, res, next) => {
+  const {bookingId} = req.body
+  const result = await booking.approveCustomerBookingDB(bookingId);
+
+  if (!result) {
+    sendResponse(res, {
+      statusCode: httpStatus.NOT_FOUND,
+      success: false,
+      message: 'your booking Cars not found',
+      data: [],
+    });
+    return;
+  }
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Your Order Confirmed successfully',
+    success: true,
+    data: result,
+  });
+});
+
+//Cancelled Customer Booking DB
+const CancelledBookingIn: RequestHandler = catchAsync(async (req, res, next) => {
+  const {bookingId} = req.body
+  
+  const result = await booking.cancelledBookingInDB(bookingId);
+
+  if (!result) {
+    sendResponse(res, {
+      statusCode: httpStatus.NOT_FOUND,
+      success: false,
+      message: 'your booking Cars not found',
+      data: [],
+    });
+    return;
+  }
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Your Order Canceled successfully',
+    success: true,
+    data: result,
+  });
+});
+
+
+//********user ********
+
 
 //Booking ACar
 const BookingACar: RequestHandler = catchAsync(async (req, res, next) => {
@@ -65,6 +142,7 @@ const BookingACar: RequestHandler = catchAsync(async (req, res, next) => {
     data: result,
   });
 });
+
  //Find User Bookings
 const FindUserBookings: RequestHandler = catchAsync(async (req, res, next) => {
   // const decoded = jwt.verify(req?.headers.authorization?.split(' ')[1] as string, config.accessToken as string)
@@ -99,27 +177,6 @@ const FindUserBookings: RequestHandler = catchAsync(async (req, res, next) => {
   });
 });
 
-//Return Booking Car
-const ReturnBookingCar: RequestHandler = catchAsync(async (req, res, next) => {
-  const result = await booking.returnBookingCarFromDB(req.body);
-
-  if (!result) {
-    sendResponse(res, {
-      statusCode: httpStatus.NOT_FOUND,
-      success: false,
-      message: 'your booking Cars not found',
-      data: [],
-    });
-    return;
-  }
-
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: 'Car returned successfully',
-    data: result,
-  });
-});
 
 // find User Upcoming Booking
 const FindUserUpcomingBooking: RequestHandler = catchAsync(async (req, res, next) => {
@@ -153,8 +210,9 @@ const FindUserUpcomingBooking: RequestHandler = catchAsync(async (req, res, next
     data: result,
   });
 });
+
 // cancel User BookingInDB
-const CancelUserBookingIn: RequestHandler = catchAsync(async (req, res, next) => {
+const UserCancelHisBooking: RequestHandler = catchAsync(async (req, res, next) => {
   const token = req?.headers.authorization?.split(' ')[1];
   const {carId, orderId} = req.body 
   if (!token) {
@@ -166,7 +224,7 @@ const CancelUserBookingIn: RequestHandler = catchAsync(async (req, res, next) =>
     config.accessToken as string,
   ) as JwtPayload & { data: { _id: string } };
 
-  const result = await booking.cancelUserBookingInDB(decoded.data._id, orderId, carId);
+  const result = await booking.userCancelHisBookingDB(decoded.data._id, orderId);
 
   if (!result) {
     sendResponse(res, {
@@ -186,11 +244,14 @@ const CancelUserBookingIn: RequestHandler = catchAsync(async (req, res, next) =>
   });
 });
 
+
 export const BookingController = {
-  BookingACar,
+  ApproveCustomerBooking,
   GetAllBookingCar,
-  FindUserBookings,
   ReturnBookingCar,
+  BookingACar,
+  FindUserBookings,
   FindUserUpcomingBooking,
-  CancelUserBookingIn
+  UserCancelHisBooking,
+  CancelledBookingIn
 };

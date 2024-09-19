@@ -8,10 +8,18 @@ const createCarIntoDB = async (payload: TCar) => {
 };
 
 // get all car
-const getAllCarIntoDB = async () => {
-  const result = await CarCollection.find();
-  if (!result) return;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const getAllCarIntoDB = async (status:any) => {
+  const query = {
+    status:status
+  }
 
+  if (status) {
+    const result = await CarCollection.find(query);    
+    return result;
+  }
+// 
+  const result = await CarCollection.find();
   return result;
 };
 

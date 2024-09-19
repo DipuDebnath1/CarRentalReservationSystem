@@ -3,7 +3,7 @@ import { CarCollection } from '../car/car.model';
 import { BookingModel } from './booking.model';
 import AppError from '../../ErrorHandler/AppError';
 import httpStatus from 'http-status';
-import { Types } from 'mongoose';
+import { startSession, Types } from 'mongoose';
 import { TCarWithId } from '../car/car.interface';
 
 type TCarOrder = {
@@ -18,6 +18,8 @@ type TCarReturn = {
 };
 
 // *********start admin route********
+
+// ****get All Booking Car FromDB *****
 const getAllBookingCarFromDB = async (carId: string, date: string) => {
   const query: { car?: Types.ObjectId; date?: string } = {};
 
@@ -30,7 +32,6 @@ const getAllBookingCarFromDB = async (carId: string, date: string) => {
       .populate('user')
       .exec();
 
-    if (!allBooking) return;
 
     return allBooking;
   } catch (error) {
@@ -98,7 +99,93 @@ const returnBookingCarFromDB = async (payload: TCarReturn) => {
   }
 };
 
+// // approve customer booking 
+const approveCustomerBookingDB = async (bookingId: string) => {
+  const session = await startSession(); 
+  session.startTransaction(); 
+
+  try {
+    const bookingItem = await BookingModel.findById(bookingId).session(session);
+
+    if (!bookingItem) {
+      throw new AppError(httpStatus.NOT_FOUND, "Booking not found");
+    }
+
+    if (bookingItem.status !== "pending") {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        `Sorry, your booking is already ${bookingItem.status}`
+      );
+    }
+
+    bookingItem.status = "confirmed";
+    await bookingItem.save({ session }); 
+
+    await CarCollection.findByIdAndUpdate(
+      bookingItem?.car._id,
+      { status: "booked" },
+      { session } 
+    );
+
+    // Commit the transaction
+    await session.commitTransaction();
+    return bookingItem; 
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (err:any) {
+    await session.abortTransaction();
+    throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, err.message || 'An error occurred while approving the booking');
+  } finally {
+    session.endSession();
+  }
+};
+
+// cancelled booking 
+
+const cancelledBookingInDB = async(bookingId: string) =>{
+  const session = await startSession(); 
+  session.startTransaction(); 
+
+  try {
+    const bookingItem = await BookingModel.findById(bookingId).session(session);
+
+    if (!bookingItem) {
+      throw new AppError(httpStatus.NOT_FOUND, "Booking not found");
+    }
+
+    if (bookingItem.status == "completed") {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        `Sorry, your booking is already ${bookingItem.status}`
+      );
+    }
+
+    bookingItem.status = "canceled";
+    await bookingItem.save({ session }); 
+
+    await CarCollection.findByIdAndUpdate(
+      bookingItem?.car._id,
+      { status: "available" },
+      { session } 
+    );
+
+    // Commit the transaction
+    await session.commitTransaction();
+    return bookingItem; 
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (err:any) {
+    await session.abortTransaction();
+    throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, err.message || 'An error occurred while canceled the booking');
+  } finally {
+    session.endSession();
+  }
+}
+
 // ********end admin route*******
+
+
+
 
 // ********start user route*********
 const bookingACarIntoDB = async (
@@ -188,12 +275,11 @@ const findUserUpcomingBooking = async (userId: string) =>{
 }  
 
   // if user status pending user canceled booking 
-const cancelUserBookingInDB =async (userId:string, orderId:string, carId:string) =>{
+const userCancelHisBookingDB =async (userId:string, orderId:string) =>{
   try{
   const query = {
       user:new Types.ObjectId(userId),
       _id:new Types.ObjectId(orderId),
-      car:new Types.ObjectId(carId),
       status: 'pending'
   }
 
@@ -227,6 +313,7 @@ export const booking = {
   findUserBookingsCarFromDB,
   returnBookingCarFromDB,
   findUserUpcomingBooking,
-  cancelUserBookingInDB
-  
+  userCancelHisBookingDB,
+  approveCustomerBookingDB,
+  cancelledBookingInDB
 };

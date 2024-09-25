@@ -7,9 +7,9 @@ const userValidationSchema = z.object({
     password: z.string().max(20),
     phone: z.string(),
     role: z.enum(['user', 'admin']).default('user').optional(),
-    isBlocked:z.boolean().default(false).optional(),
-    bookings:z.array(z.string()).optional(),
-    address: z.string(),
+    isBlocked: z.boolean().default(false).optional(),
+    bookings: z.array(z.string()).optional(),
+    address: z.string().optional(),
   }),
 });
 

@@ -8,12 +8,39 @@ const router = express.Router();
 
 // *******admin *******
 router.get('/', verifyAdmin(), BookingController.GetAllBookingCar);
-router.post('/approve-booking',verifyAdmin(), BookingController.ApproveCustomerBooking);
-router.post('/canceled-booking',verifyAdmin(), BookingController.CancelledBookingIn);
+router.post(
+  '/approve-booking',
+  verifyAdmin(),
+  BookingController.ApproveCustomerBooking,
+);
+router.post(
+  '/canceled-booking',
+  verifyAdmin(),
+  BookingController.CancelledBookingIn,
+);
+router.put(
+  '/return',
+  validationRequest(bookingCar.returnValidationSchema),
+  verifyAdmin(),
+  BookingController.ReturnBookingCar,
+);
 // *******user *******
-router.post('/', verifyUser(),validationRequest(bookingCar.bookingValidationSchema),BookingController.BookingACar);
+router.post(
+  '/',
+  verifyUser(),
+  validationRequest(bookingCar.bookingValidationSchema),
+  BookingController.BookingACar,
+);
+router.post(
+  '/cancel-my-booking',
+  verifyUser(),
+  BookingController.UserCancelHisBooking,
+);
 router.get('/my-bookings', verifyUser(), BookingController.FindUserBookings);
-router.get('/my-upcoming-booking',verifyUser(), BookingController.FindUserUpcomingBooking);
-router.put('/cancel-my-order',verifyUser(), BookingController.UserCancelHisBooking);
+router.get(
+  '/my-upcoming-booking',
+  verifyUser(),
+  BookingController.FindUserUpcomingBooking,
+);
 
 export const BookingRoute = router;

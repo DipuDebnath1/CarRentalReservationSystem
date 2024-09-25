@@ -8,16 +8,15 @@ import config from '../../../config';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import AppError from '../../ErrorHandler/AppError';
 
-
 //******admin**** */
-
 
 // Get All Booking Car
 const GetAllBookingCar: RequestHandler = catchAsync(async (req, res, next) => {
-  const { carId, date } = req.query;
+  const { carId, date, status } = req.query;
   const result = await booking.getAllBookingCarFromDB(
     carId as string,
     date as string,
+    status as string,
   );
   if (!result) {
     sendResponse(res, {
@@ -59,55 +58,57 @@ const ReturnBookingCar: RequestHandler = catchAsync(async (req, res, next) => {
 });
 
 //Approve Customer Booking DB
-const ApproveCustomerBooking: RequestHandler = catchAsync(async (req, res, next) => {
-  const {bookingId} = req.body
-  const result = await booking.approveCustomerBookingDB(bookingId);
+const ApproveCustomerBooking: RequestHandler = catchAsync(
+  async (req, res, next) => {
+    const { bookingId } = req.body;
+    const result = await booking.approveCustomerBookingDB(bookingId);
 
-  if (!result) {
+    if (!result) {
+      sendResponse(res, {
+        statusCode: httpStatus.NOT_FOUND,
+        success: false,
+        message: 'your booking Cars not found',
+        data: [],
+      });
+      return;
+    }
+
     sendResponse(res, {
-      statusCode: httpStatus.NOT_FOUND,
-      success: false,
-      message: 'your booking Cars not found',
-      data: [],
+      statusCode: httpStatus.OK,
+      message: 'Your Order Confirmed successfully',
+      success: true,
+      data: result,
     });
-    return;
-  }
-
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    message: 'Your Order Confirmed successfully',
-    success: true,
-    data: result,
-  });
-});
+  },
+);
 
 //Cancelled Customer Booking DB
-const CancelledBookingIn: RequestHandler = catchAsync(async (req, res, next) => {
-  const {bookingId} = req.body
-  
-  const result = await booking.cancelledBookingInDB(bookingId);
+const CancelledBookingIn: RequestHandler = catchAsync(
+  async (req, res, next) => {
+    const { bookingId } = req.body;
 
-  if (!result) {
+    const result = await booking.cancelledBookingInDB(bookingId);
+
+    if (!result) {
+      sendResponse(res, {
+        statusCode: httpStatus.NOT_FOUND,
+        success: false,
+        message: 'your booking Cars not found',
+        data: [],
+      });
+      return;
+    }
+
     sendResponse(res, {
-      statusCode: httpStatus.NOT_FOUND,
-      success: false,
-      message: 'your booking Cars not found',
-      data: [],
+      statusCode: httpStatus.OK,
+      message: 'Your Order Canceled successfully',
+      success: true,
+      data: result,
     });
-    return;
-  }
-
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    message: 'Your Order Canceled successfully',
-    success: true,
-    data: result,
-  });
-});
-
+  },
+);
 
 //********user ********
-
 
 //Booking ACar
 const BookingACar: RequestHandler = catchAsync(async (req, res, next) => {
@@ -143,8 +144,9 @@ const BookingACar: RequestHandler = catchAsync(async (req, res, next) => {
   });
 });
 
- //Find User Bookings
+//Find User Bookings
 const FindUserBookings: RequestHandler = catchAsync(async (req, res, next) => {
+  const { status } = req.query;
   // const decoded = jwt.verify(req?.headers.authorization?.split(' ')[1] as string, config.accessToken as string)
   const token = req?.headers.authorization?.split(' ')[1];
 
@@ -157,7 +159,10 @@ const FindUserBookings: RequestHandler = catchAsync(async (req, res, next) => {
     config.accessToken as string,
   ) as JwtPayload & { data: { _id: string } };
 
-  const result = await booking.findUserBookingsCarFromDB(decoded.data._id);
+  const result = await booking.findUserBookingsCarFromDB(
+    decoded.data._id,
+    status as string,
+  );
 
   if (!result) {
     sendResponse(res, {
@@ -176,74 +181,79 @@ const FindUserBookings: RequestHandler = catchAsync(async (req, res, next) => {
     data: result,
   });
 });
-
 
 // find User Upcoming Booking
-const FindUserUpcomingBooking: RequestHandler = catchAsync(async (req, res, next) => {
-  const token = req?.headers.authorization?.split(' ')[1];
+const FindUserUpcomingBooking: RequestHandler = catchAsync(
+  async (req, res, next) => {
+    const token = req?.headers.authorization?.split(' ')[1];
 
-  if (!token) {
-    return next(new AppError(httpStatus.UNAUTHORIZED, 'No token provided'));
-  }
+    if (!token) {
+      return next(new AppError(httpStatus.UNAUTHORIZED, 'No token provided'));
+    }
 
-  const decoded = jwt.verify(
-    token,
-    config.accessToken as string,
-  ) as JwtPayload & { data: { _id: string } };
+    const decoded = jwt.verify(
+      token,
+      config.accessToken as string,
+    ) as JwtPayload & { data: { _id: string } };
 
-  const result = await booking.findUserUpcomingBooking(decoded.data._id);
+    const result = await booking.findUserUpcomingBooking(decoded.data._id);
 
-  if (!result) {
+    if (!result) {
+      sendResponse(res, {
+        statusCode: httpStatus.NOT_FOUND,
+        success: false,
+        message: 'your booking Cars not found',
+        data: [],
+      });
+      return;
+    }
+
     sendResponse(res, {
-      statusCode: httpStatus.NOT_FOUND,
-      success: false,
-      message: 'your booking Cars not found',
-      data: [],
+      statusCode: httpStatus.OK,
+      message: 'My Bookings retrieved successfully',
+      success: true,
+      data: result,
     });
-    return;
-  }
-
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    message: 'My Bookings retrieved successfully',
-    success: true,
-    data: result,
-  });
-});
+  },
+);
 
 // cancel User BookingInDB
-const UserCancelHisBooking: RequestHandler = catchAsync(async (req, res, next) => {
-  const token = req?.headers.authorization?.split(' ')[1];
-  const {carId, orderId} = req.body 
-  if (!token) {
-    return next(new AppError(httpStatus.UNAUTHORIZED, 'No token provided'));
-  }
+const UserCancelHisBooking: RequestHandler = catchAsync(
+  async (req, res, next) => {
+    const token = req?.headers.authorization?.split(' ')[1];
+    const { carId, bookingId } = req.body;
+    if (!token) {
+      return next(new AppError(httpStatus.UNAUTHORIZED, 'No token provided'));
+    }
 
-  const decoded = jwt.verify(
-    token,
-    config.accessToken as string,
-  ) as JwtPayload & { data: { _id: string } };
+    const decoded = jwt.verify(
+      token,
+      config.accessToken as string,
+    ) as JwtPayload & { data: { _id: string } };
 
-  const result = await booking.userCancelHisBookingDB(decoded.data._id, orderId);
+    const result = await booking.userCancelHisBookingDB(
+      decoded.data._id,
+      bookingId,
+    );
 
-  if (!result) {
+    if (!result) {
+      sendResponse(res, {
+        statusCode: httpStatus.NOT_FOUND,
+        success: false,
+        message: 'your booking Cars not found',
+        data: [],
+      });
+      return;
+    }
+
     sendResponse(res, {
-      statusCode: httpStatus.NOT_FOUND,
-      success: false,
-      message: 'your booking Cars not found',
-      data: [],
+      statusCode: httpStatus.OK,
+      message: 'Your Order Canceled successfully',
+      success: true,
+      data: result,
     });
-    return;
-  }
-
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    message: 'Your Order Canceled successfully',
-    success: true,
-    data: result,
-  });
-});
-
+  },
+);
 
 export const BookingController = {
   ApproveCustomerBooking,
@@ -253,5 +263,5 @@ export const BookingController = {
   FindUserBookings,
   FindUserUpcomingBooking,
   UserCancelHisBooking,
-  CancelledBookingIn
+  CancelledBookingIn,
 };

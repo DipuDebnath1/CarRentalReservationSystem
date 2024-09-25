@@ -5,8 +5,10 @@ import { UserServices } from './user.service';
 import sendResponse from '../../utills/sendResponse';
 import httpStatus from 'http-status';
 import config from '../../../config';
-import jwt from 'jsonwebtoken';
+import jwt, { JwtPayload } from 'jsonwebtoken';
+import AppError from '../../ErrorHandler/AppError';
 
+// *************user*********
 const createStudent: RequestHandler = catchAsync(async (req, res, next) => {
   const result = await UserServices.createUserIntoDB(req.body);
   sendResponse(res, {
@@ -41,46 +43,85 @@ const getSingleUser: RequestHandler = catchAsync(async (req, res, next) => {
   }
 });
 
-const ChangeUserRole: RequestHandler = catchAsync(async (req, res, next) => {
-  const {userId, role} = req.body
-  const data = await UserServices.changeUserRoleDB(userId, role)
+const UpdateUserProfile: RequestHandler = catchAsync(async (req, res, next) => {
+  const token = req?.headers.authorization?.split(' ')[1];
 
-    sendResponse(res, {
-      statusCode: httpStatus.OK,
-      success: true,
-      message: 'User role update successfully',
-      data: data,
-    });
+  if (!token) {
+    return next(new AppError(httpStatus.UNAUTHORIZED, 'No token provided'));
+  }
+
+  const decoded = jwt.verify(
+    token,
+    config.accessToken as string,
+  ) as JwtPayload & { data: { _id: string } };
+  const data = await UserServices.updateUserProfileDB(
+    decoded.data._id,
+    req.body,
+  );
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Profile Update in successfully',
+    data: data,
+  });
+});
+
+//**********admin*********
+
+const ChangeUserRole: RequestHandler = catchAsync(async (req, res, next) => {
+  const { userId, role } = req.body;
+  const data = await UserServices.changeUserRoleDB(userId, role);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'User role update successfully',
+    data: data,
+  });
 });
 
 const BlockedUser: RequestHandler = catchAsync(async (req, res, next) => {
-  const {userId} = req.body
+  const { userId } = req.body;
   const data = await UserServices.blockedUserDB(userId);
 
-    sendResponse(res, {
-      statusCode: httpStatus.OK,
-      success: true,
-      message: 'User blocked successfully',
-      data: data,
-    });
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'User blocked successfully',
+    data: data,
+  });
 });
 
 const UnBlockedUser: RequestHandler = catchAsync(async (req, res, next) => {
-  const {userId} = req.body
+  const { userId } = req.body;
   const data = await UserServices.unBlockedUserDB(userId);
 
-    sendResponse(res, {
-      statusCode: httpStatus.OK,
-      success: true,
-      message: 'User unblocked successfully',
-      data: data,
-    });
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'User unblocked successfully',
+    data: data,
+  });
+});
+
+const FindAllUser: RequestHandler = catchAsync(async (req, res, next) => {
+  const data = await UserServices.findAllUsersFromDB();
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'get all users successfully',
+    data: data,
+  });
 });
 
 export const UserController = {
   createStudent,
   getSingleUser,
+  UpdateUserProfile,
   ChangeUserRole,
   BlockedUser,
-  UnBlockedUser
+  UnBlockedUser,
+  FindAllUser,
 };

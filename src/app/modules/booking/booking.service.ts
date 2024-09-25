@@ -5,6 +5,7 @@ import AppError from '../../ErrorHandler/AppError';
 import httpStatus from 'http-status';
 import { startSession, Types } from 'mongoose';
 import { TCarWithId } from '../car/car.interface';
+import { calculateTotalPrice } from '../../utills/canculatePrice';
 
 type TCarOrder = {
   car: string;
@@ -20,18 +21,22 @@ type TCarReturn = {
 // *********start admin route********
 
 // ****get All Booking Car FromDB *****
-const getAllBookingCarFromDB = async (carId: string, date: string) => {
-  const query: { car?: Types.ObjectId; date?: string } = {};
+const getAllBookingCarFromDB = async (
+  carId: string,
+  date: string,
+  status: string,
+) => {
+  const query: { car?: Types.ObjectId; date?: string; status?: string } = {};
 
   if (carId) query.car = new Types.ObjectId(carId); // Convert carId to ObjectId
   if (date) query.date = date;
+  if (status) query.status = status;
 
   try {
     const allBooking = await BookingModel.find(query)
       .populate('car')
       .populate('user')
       .exec();
-
 
     return allBooking;
   } catch (error) {
@@ -40,49 +45,40 @@ const getAllBookingCarFromDB = async (carId: string, date: string) => {
   }
 };
 
-// return booking 
+// return booking
 const returnBookingCarFromDB = async (payload: TCarReturn) => {
   const session = await BookingModel.startSession();
 
   try {
     session.startTransaction();
 
-    const findBookingCar = await BookingModel.findById(payload.bookingId)
+    const findBooking = await BookingModel.findById(payload.bookingId)
       .populate<{ car: TCarWithId }>('car')
       .populate('user')
       .session(session);
 
-    if (!findBookingCar) {
-      throw new AppError(httpStatus.BAD_REQUEST, 'Car not found');
+    if (!findBooking) {
+      throw new AppError(httpStatus.BAD_REQUEST, ' Booking Car not found');
     }
     // car status update
     await CarCollection.findByIdAndUpdate(
-      findBookingCar.car._id,
+      findBooking.car._id,
       { status: 'available' },
       { new: true },
     ).session(session);
 
-    const parseTime = (timeStr: string) => {
-      const [hours, minutes] = timeStr.split(':').map(Number);
-      const date = new Date();
-      date.setHours(hours, minutes, 0, 0);
-      return date;
-    };
-
-    const startDate: Date = parseTime(findBookingCar.startTime);
-    const endDate: Date = parseTime(payload.endTime);
-
-    // Calculate the time difference in milliseconds
-    const timeDifference = endDate.getTime() - startDate.getTime();
-
-    // Convert milliseconds to hours (fractional)
-    const millisecondsInAnHour = 1000 * 60 * 60;
-    const hoursDifference = timeDifference / millisecondsInAnHour;
-    const totalCost = hoursDifference * findBookingCar.car.pricePerHour;
-
+    const totalCost = calculateTotalPrice(
+      findBooking.pickUpDate,
+      findBooking.dropOffDate,
+      findBooking.startTime,
+      payload.endTime,
+      findBooking.car.pricePerHour,
+    );
+    console.log(totalCost);
+    // console.log({ totalCost: totalCost, info: totalCost });
     const result = await BookingModel.findByIdAndUpdate(
       payload.bookingId,
-      { endTime: payload.endTime, totalCost: totalCost },
+      { endTime: payload.endTime, totalCost: totalCost, status: 'completed' },
       { new: true },
     )
       .populate('car')
@@ -99,93 +95,97 @@ const returnBookingCarFromDB = async (payload: TCarReturn) => {
   }
 };
 
-// // approve customer booking 
+// // approve customer booking
 const approveCustomerBookingDB = async (bookingId: string) => {
-  const session = await startSession(); 
-  session.startTransaction(); 
+  const session = await startSession();
+  session.startTransaction();
 
   try {
     const bookingItem = await BookingModel.findById(bookingId).session(session);
 
     if (!bookingItem) {
-      throw new AppError(httpStatus.NOT_FOUND, "Booking not found");
+      throw new AppError(httpStatus.NOT_FOUND, 'Booking not found');
     }
 
-    if (bookingItem.status !== "pending") {
+    if (bookingItem.status !== 'pending') {
       throw new AppError(
         httpStatus.BAD_REQUEST,
-        `Sorry, your booking is already ${bookingItem.status}`
+        `Sorry, your booking is already ${bookingItem.status}`,
       );
     }
 
-    bookingItem.status = "confirmed";
-    await bookingItem.save({ session }); 
+    bookingItem.status = 'confirmed';
+    await bookingItem.save({ session });
 
     await CarCollection.findByIdAndUpdate(
       bookingItem?.car._id,
-      { status: "booked" },
-      { session } 
+      { status: 'booked' },
+      { session },
     );
 
     // Commit the transaction
     await session.commitTransaction();
-    return bookingItem; 
+    return bookingItem;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (err:any) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (err: any) {
     await session.abortTransaction();
-    throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, err.message || 'An error occurred while approving the booking');
+    throw new AppError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      err.message || 'An error occurred while approving the booking',
+    );
   } finally {
     session.endSession();
   }
 };
 
-// cancelled booking 
+// cancelled booking
 
-const cancelledBookingInDB = async(bookingId: string) =>{
-  const session = await startSession(); 
-  session.startTransaction(); 
+const cancelledBookingInDB = async (bookingId: string) => {
+  const session = await startSession();
+  session.startTransaction();
 
   try {
     const bookingItem = await BookingModel.findById(bookingId).session(session);
 
     if (!bookingItem) {
-      throw new AppError(httpStatus.NOT_FOUND, "Booking not found");
+      throw new AppError(httpStatus.NOT_FOUND, 'Booking not found');
     }
 
-    if (bookingItem.status == "completed") {
+    // check booking status
+    if (bookingItem.status == 'completed' || bookingItem.status == 'canceled') {
       throw new AppError(
         httpStatus.BAD_REQUEST,
-        `Sorry, your booking is already ${bookingItem.status}`
+        `Sorry, your booking is already ${bookingItem.status}`,
       );
     }
 
-    bookingItem.status = "canceled";
-    await bookingItem.save({ session }); 
+    bookingItem.status = 'canceled';
+    await bookingItem.save({ session });
 
     await CarCollection.findByIdAndUpdate(
       bookingItem?.car._id,
-      { status: "available" },
-      { session } 
+      { status: 'available' },
+      { session },
     );
 
     // Commit the transaction
     await session.commitTransaction();
-    return bookingItem; 
+    return bookingItem;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (err:any) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (err: any) {
     await session.abortTransaction();
-    throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, err.message || 'An error occurred while canceled the booking');
+    throw new AppError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      err.message || 'An error occurred while canceled the booking',
+    );
   } finally {
     session.endSession();
   }
-}
+};
 
 // ********end admin route*******
-
-
-
 
 // ********start user route*********
 const bookingACarIntoDB = async (
@@ -209,7 +209,6 @@ const bookingACarIntoDB = async (
     if (car.status === 'unavailable') {
       throw new AppError(httpStatus.CONFLICT, 'Car is unavailable');
     }
-
 
     // Create booking
     const bookingInfo = {
@@ -237,9 +236,10 @@ const bookingACarIntoDB = async (
   }
 };
 // find User Bookings Car FromDB
-const findUserBookingsCarFromDB = async (userId: string) => {
-  const query: { user?: Types.ObjectId } = {};
+const findUserBookingsCarFromDB = async (userId: string, status: string) => {
+  const query: { user?: Types.ObjectId; status?: string } = {};
   if (userId) query.user = new Types.ObjectId(userId);
+  if (status) query.status = status;
   try {
     const allBooking = await BookingModel.find(query)
       .populate('car')
@@ -255,57 +255,59 @@ const findUserBookingsCarFromDB = async (userId: string) => {
   }
 };
 
-// UserUpcoming Booking
-const findUserUpcomingBooking = async (userId: string) =>{
-
-    const query = {
-      user : new Object(userId),
-                      // set search Param 
-      status: {$in:['canceled', 'pending', 'confirmed']}
-    }
-  
-    try {
-      const bookings = await BookingModel.find(query).populate('car');
-  
-      return bookings;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
-      throw new AppError(httpStatus.CONFLICT, 'Car not found unavailable');
-    }
-}  
-
-  // if user status pending user canceled booking 
-const userCancelHisBookingDB =async (userId:string, orderId:string) =>{
-  try{
+// User Upcoming Booking
+const findUserUpcomingBooking = async (userId: string) => {
   const query = {
-      user:new Types.ObjectId(userId),
-      _id:new Types.ObjectId(orderId),
-      status: 'pending'
+    user: new Object(userId),
+    // set search Param
+    status: { $in: ['pending', 'confirmed'] },
+  };
+
+  try {
+    const bookings = await BookingModel.find(query).populate('car');
+
+    return bookings;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
+    throw new AppError(httpStatus.CONFLICT, 'Car not found unavailable');
   }
+};
 
-  const booking = await BookingModel.findOne(query)
+// if user status pending user canceled booking
+const userCancelHisBookingDB = async (userId: string, bookingId: string) => {
+  try {
+    const query = {
+      user: new Types.ObjectId(userId),
+      _id: new Types.ObjectId(bookingId),
+      status: 'pending',
+    };
 
-  if(!booking){
-    throw new AppError(httpStatus.NOT_FOUND, 'Booking not found or not in pending status');
+    const booking = await BookingModel.findOne(query);
+
+    if (!booking) {
+      throw new AppError(
+        httpStatus.NOT_FOUND,
+        'Booking not found or not in pending status',
+      );
+    }
+
+    // update booking
+    booking.status = 'canceled';
+    // await booking.save()
+    const result = await booking.save();
+
+    return result;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (err: any) {
+    throw new AppError(
+      httpStatus.CONFLICT,
+      err.message || 'Error canceling the booking',
+    );
   }
-
-  // update booking
-  booking.status = 'canceled';
-  // await booking.save()
-  const result = await booking.save();
-
-  return result
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-}catch(err:any){
-  throw new AppError(httpStatus.CONFLICT, err.message || 'Error canceling the booking');
-  
-}
-
-}
+};
 
 // **************end user route***********
-
 
 export const booking = {
   bookingACarIntoDB,
@@ -315,5 +317,5 @@ export const booking = {
   findUserUpcomingBooking,
   userCancelHisBookingDB,
   approveCustomerBookingDB,
-  cancelledBookingInDB
+  cancelledBookingInDB,
 };

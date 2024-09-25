@@ -13,11 +13,11 @@ const userSchema = new Schema<TUser>(
       type: String,
       required: true,
       unique: true,
-    },  
+    },
     password: {
       type: String,
       required: true,
-    },  
+    },
     phone: {
       type: String,
       required: true,
@@ -29,15 +29,16 @@ const userSchema = new Schema<TUser>(
     },
     isBlocked: {
       type: Boolean,
-      default:false,
+      default: false,
     },
-    bookings: [{ 
-      type: Schema.Types.ObjectId,
-      ref: 'booking' 
-    }],
+    bookings: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'booking',
+      },
+    ],
     address: {
       type: String,
-      required: true,
     },
   },
   {

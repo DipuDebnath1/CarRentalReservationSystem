@@ -12,6 +12,7 @@ const carCreateValidationSchema = z.object({
     status: z
       .enum(['available', 'unavailable', 'booked', 'maintenance'])
       .optional(),
+    type: z.enum(['SUV', 'Sedan', 'Hybrid']),
     isDeleted: z.boolean().optional(),
   }),
 });
@@ -29,6 +30,7 @@ const carUpdateValidationSchema = z.object({
       .enum(['available', 'unavailable', 'booked', 'maintenance'])
       .default('available')
       .optional(),
+    type: z.enum(['SUV', 'Sedan', 'Hybrid']).optional(),
     isDeleted: z.boolean().optional(),
   }),
 });

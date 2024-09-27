@@ -16,10 +16,9 @@ const createCar: RequestHandler = catchAsync(async (req, res, next) => {
 });
 
 const getAllCar: RequestHandler = catchAsync(async (req, res, next) => {
-  
-  const {status } = req.query 
-  
-  const result = await carService.getAllCarIntoDB(status) ;
+  const { status } = req.query;
+
+  const result = await carService.getAllCarIntoDB(status);
 
   if (!result) {
     sendResponse(res, {
@@ -37,6 +36,30 @@ const getAllCar: RequestHandler = catchAsync(async (req, res, next) => {
     data: result,
   });
 });
+
+const GetAllCarWithSearchCriteriaInto: RequestHandler = catchAsync(
+  async (req, res, next) => {
+    const result = await carService.getAllCarWithSearchCriteriaIntoDB(
+      req.query,
+    );
+
+    if (!result) {
+      sendResponse(res, {
+        statusCode: httpStatus.NOT_FOUND,
+        success: false,
+        message: 'Cars retrieved false',
+        data: [],
+      });
+      return;
+    }
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: 'Cars retrieved successfully',
+      data: result,
+    });
+  },
+);
 
 const getSingleCar: RequestHandler = catchAsync(async (req, res, next) => {
   const id = req.params.id;
@@ -103,6 +126,7 @@ const deleteSingleCar: RequestHandler = catchAsync(async (req, res, next) => {
 export const CarController = {
   createCar,
   getAllCar,
+  GetAllCarWithSearchCriteriaInto,
   getSingleCar,
   updateSingleCar,
   deleteSingleCar,

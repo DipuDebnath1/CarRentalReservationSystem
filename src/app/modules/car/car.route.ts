@@ -13,6 +13,7 @@ router.post(
   CarController.createCar,
 );
 router.get('/', CarController.getAllCar);
+router.get('/search-criteria', CarController.GetAllCarWithSearchCriteriaInto);
 router.get('/:id', CarController.getSingleCar);
 router.put(
   '/:id',

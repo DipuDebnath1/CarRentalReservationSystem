@@ -3,12 +3,13 @@ import { Types } from 'mongoose';
 export type TCar = {
   name: string;
   description: string;
-  img: string,
+  img: string;
   color: string;
   isElectric: boolean;
   features: string[];
   pricePerHour: number;
-  status: 'available' | 'unavailable'| 'booked' | 'maintenance';
+  status: 'available' | 'unavailable' | 'booked' | 'maintenance';
+  type: 'SUV' | 'Sedan' | 'Hybrid';
   isDeleted: boolean;
 };
 

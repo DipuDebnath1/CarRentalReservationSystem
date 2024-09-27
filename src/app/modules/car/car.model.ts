@@ -11,9 +11,9 @@ const carScheme = new Schema<TCar>(
       type: String,
       required: true,
     },
-    img:{
-      type:String,
-      required:true,
+    img: {
+      type: String,
+      required: true,
     },
     color: {
       type: String,
@@ -28,12 +28,16 @@ const carScheme = new Schema<TCar>(
     },
     pricePerHour: {
       type: Number,
-      required:true
+      required: true,
     },
     status: {
       type: String,
-      enum: ['available', 'unavailable', "booked", 'maintenance' ],
+      enum: ['available', 'unavailable', 'booked', 'maintenance'],
       default: 'available',
+    },
+    type: {
+      type: String,
+      enum: ['SUV', 'Sedan', 'Hybrid'],
     },
 
     isDeleted: {

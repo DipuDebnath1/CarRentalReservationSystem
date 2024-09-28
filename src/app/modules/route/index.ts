@@ -1,5 +1,6 @@
 import { BookingRoute } from '../booking/booking.route';
 import { CarRoute } from '../car/car.route';
+import { paymentRouter } from '../payment/payment.route';
 import { UserRoute } from '../user/user.route';
 import express from 'express';
 
@@ -16,6 +17,10 @@ const moduleRoute = [
   {
     path: '/bookings',
     route: BookingRoute,
+  },
+  {
+    path: '/payment',
+    route: paymentRouter,
   },
 ];
 

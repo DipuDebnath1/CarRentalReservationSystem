@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 export type TBookingCar = {
-  _id?:string,
+  _id?: string;
   user: mongoose.Types.ObjectId;
   car: mongoose.Types.ObjectId;
   pickUpDate: string;
@@ -12,4 +12,5 @@ export type TBookingCar = {
   status: 'pending' | 'confirmed' | 'canceled' | 'completed';
   paymentStatus: 'unpaid' | 'paid';
   totalCost: number;
+  transactionId: string;
 };

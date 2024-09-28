@@ -5,6 +5,7 @@ import { BookingModel } from '../booking/booking.model';
 import { initialPayment, verifyPayment } from './Payment.utills';
 import { TCar } from '../car/car.interface';
 import { TUser } from '../user/user.interface';
+import config from '../../../config';
 
 // paymentBookingPrice
 const paymentBookingPrice = async (id: string) => {
@@ -36,14 +37,12 @@ const paymentBookingPrice = async (id: string) => {
       customerEmail: bookingData.user.email,
       customerPhone: bookingData.user.phone,
       customerAddress: bookingData.user.address,
-      paymentSuccessUrl: `http://localhost:5000/api/payment/success?${transactionId}`,
-      paymentFailedUrl: 'https://i.ibb.co.com/Fxhc7m7/download.jpg',
-      paymentCancelledUrl: 'https://i.ibb.co.com/5xJkQXw/download.png',
+      paymentSuccessUrl: `${config.server_url}/payment/success?${transactionId}`,
+      paymentFailedUrl: `${config.server_url}/payment/failed`,
+      paymentCancelledUrl: `${config.server_url}/payment/cancelled`,
     };
     // payment
     const paymentSession = await initialPayment(paymentData);
-    // eslint-disable-next-line no-console
-    console.log(paymentSession);
     await session.commitTransaction();
 
     return paymentSession;

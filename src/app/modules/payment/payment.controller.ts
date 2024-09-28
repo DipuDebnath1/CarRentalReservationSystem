@@ -4,7 +4,7 @@ import catchAsync from '../../utills/catchAsync';
 import httpStatus from 'http-status';
 import sendResponse from '../../utills/sendResponse';
 import { PaymentService } from './payment.service';
-import { success } from './responsePage';
+import { cancelledPayment, failedPayment, success } from './responsePage';
 
 const PaymentTotalPrice: RequestHandler = catchAsync(async (req, res, next) => {
   const { booking } = req.params;
@@ -36,15 +36,26 @@ const PaymentSuccess: RequestHandler = catchAsync(async (req, res, next) => {
     res.send(success(result));
   } else {
     sendResponse(res, {
-      statusCode: httpStatus.OK,
-      success: true,
+      statusCode: httpStatus.FAILED_DEPENDENCY,
+      success: false,
       message: 'pay filed',
       data: result,
     });
   }
 });
 
+// get paymentFailedUrl
+const paymentFailed: RequestHandler = catchAsync(async (req, res, next) => {
+  res.send(failedPayment());
+});
+// get payment cancelled
+const paymentCancelled: RequestHandler = catchAsync(async (req, res, next) => {
+  res.send(cancelledPayment());
+});
+
 export const paymentController = {
   PaymentTotalPrice,
+  paymentCancelled,
+  paymentFailed,
   PaymentSuccess,
 };

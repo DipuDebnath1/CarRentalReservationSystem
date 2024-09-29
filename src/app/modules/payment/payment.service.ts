@@ -37,7 +37,7 @@ const paymentBookingPrice = async (id: string) => {
       customerEmail: bookingData.user.email,
       customerPhone: bookingData.user.phone,
       customerAddress: bookingData.user.address,
-      paymentSuccessUrl: `${config.server_url}/payment/success?${transactionId}`,
+      paymentSuccessUrl: `${config.server_url}/payment/success?txnId=${transactionId}`,
       paymentFailedUrl: `${config.server_url}/payment/failed`,
       paymentCancelledUrl: `${config.server_url}/payment/cancelled`,
     };
